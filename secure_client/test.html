@@ -3,28 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backend Test - IPFS Upload</title>
+    <title>System Testing Dashboard - IPFS Upload</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
-        .test-section { background: #f0f0f0; padding: 20px; margin: 20px 0; border-radius: 5px; }
-        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
-        button:hover { background: #0056b3; }
-        .result { background: #e8f5e8; border: 1px solid #c3e6c3; padding: 15px; margin: 10px 0; border-radius: 5px; }
-        .error { background: #ffeaea; border: 1px solid #f5c6c6; }
-        .primary-gateway { color: #007bff; font-weight: bold; text-decoration: none; }
-        .primary-gateway:hover { text-decoration: underline; }
-        .secondary-gateway { color: #666; text-decoration: none; }
-        .secondary-gateway:hover { text-decoration: underline; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: slideDown 0.6s ease-out;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .test-section {
+            background: linear-gradient(135deg, #f5f7fa 0%, #f0f3f8 100%);
+            border: 2px solid #e0e7ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        .test-section:hover {
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+            border-color: #667eea;
+        }
+
+        .test-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .test-section input[type="file"] {
+            padding: 10px;
+            border: 2px solid #e0e7ff;
+            border-radius: 8px;
+            margin: 10px 0;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px 5px 10px 0;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9em;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border: 2px solid #28a745;
+            border-left: 4px solid #28a745;
+            color: #155724;
+            padding: 18px;
+            margin: 15px 0;
+            border-radius: 10px;
+            animation: slideUp 0.4s ease-out;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border: 2px solid #dc3545;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result strong {
+            display: block;
+            margin: 8px 0 4px 0;
+            color: inherit;
+        }
+
+        .result pre {
+            background: rgba(255,255,255,0.5);
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.85em;
+            margin: 10px 0;
+        }
+
+        .gateway-link {
+            display: inline-block;
+            margin: 5px 5px 5px 0;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 6px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .gateway-link:hover {
+            background: white;
+            transform: translateY(-2px);
+        }
+
+        .primary-gateway {
+            color: #007bff;
+            font-weight: bold;
+            border-left: 3px solid #007bff;
+            padding-left: 10px;
+        }
+
+        .secondary-gateway {
+            color: #666;
+            border-left: 3px solid #ffc107;
+            padding-left: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            margin-top: 30px;
+            font-size: 0.9em;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-left: auto;
+        }
+
+        .status-badge.success {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-badge.error {
+            background: #dc3545;
+            color: white;
+        }
+
+        .status-badge.pending {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.6em;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            button {
+                width: 100%;
+                margin: 10px 0;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>🔧 Backend Test - IPFS Upload</h1>
-
-    <div class="test-section">
-        <h3>Test 1: Server Health</h3>
-        <button onclick="testHealth()">Test Server Health</button>
-        <div id="healthResult"></div>
+    <div class="header">
+        <h1>🔧 System Testing Dashboard</h1>
+        <p>Verify server health, IPFS integration, and MetaMask connectivity</p>
     </div>
+
+    <div class="container">
+        <div class="test-section">
+            <h3>
+                <span>🏥</span> Test 1: Server Health
+                <span class="status-badge pending" id="healthBadge">Checking...</span>
+            </h3>
+            <button onclick="testHealth()">🧪 Check Server Status</button>
+            <div id="healthResult"></div>
+        </div>
 
     <div class="test-section">
         <h3>Test 2: File Upload</h3>

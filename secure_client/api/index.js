@@ -6,5 +6,11 @@
 
 const app = require("../core_engine");
 
-// Export for Vercel
+/**
+ * Handler for Vercel Serverless
+ * Vercel automatically recognizes express apps in api/ folder
+ */
 module.exports = app;
+
+// Also export as default handler for explicit Vercel compatibility
+module.exports.default = app;

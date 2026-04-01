@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
 const { PinataSDK } = require("pinata");
+const { ethers } = require("ethers");
 require("dotenv").config();
 
 /**
@@ -300,6 +301,59 @@ app.get("/api/retrieve/:cid", async (req, res) => {
 });
 
 /**
+ * POST /api/anchor-evm
+ * Anchors SHA-256 hash on EVM blockchain
+ * 
+ * Payload: { contentHash (hex), contractAddress, rpcUrl }
+ * Response: { transactionHash, blockNumber, gasUsed }
+ */
+app.post("/api/anchor-evm", async (req, res) => {
+  try {
+    const { contentHash, contractAddress, rpcUrl } = req.body;
+
+    if (!contentHash || !contractAddress || !rpcUrl) {
+      return res.status(400).json({ 
+        error: "Missing required fields: contentHash, contractAddress, rpcUrl" 
+      });
+    }
+
+    // This endpoint provides the contract interaction logic
+    // The actual transaction should be signed by the client (MetaMask)
+    // This returns the data needed for the client to execute the transaction
+
+    // Contract ABI for DocRegistry
+    const contractABI = [
+      "function anchorHash(bytes32 _hash) external",
+      "function verify(bytes32 _hash) external view returns (bool)",
+      "event DocumentAnchored(bytes32 indexed docHash, uint256 timestamp)"
+    ];
+
+    // Convert hash to bytes32
+    const hashBytes32 = "0x" + contentHash;
+
+    // Create contract interface
+    const contract = new ethers.Contract(contractAddress, contractABI);
+
+    // Get the function data for anchorHash
+    const txData = contract.interface.encodeFunctionData("anchorHash", [hashBytes32]);
+
+    res.json({
+      success: true,
+      contractAddress: contractAddress,
+      functionData: txData,
+      hashBytes32: hashBytes32,
+      rpcUrl: rpcUrl,
+      message: "Use this data with MetaMask to execute the anchor transaction",
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error("[EVM_ANCHOR_ERROR]", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * GET /
  * Health check endpoint
  */
@@ -314,7 +368,8 @@ app.get("/", (req, res) => {
       encrypt: "POST /api/encrypt",
       upload: "POST /api/upload",
       "secure-document": "POST /api/secure-document",
-      retrieve: "GET /api/retrieve/:cid"
+      retrieve: "GET /api/retrieve/:cid",
+      "anchor-evm": "POST /api/anchor-evm"
     }
   });
 });

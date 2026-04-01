@@ -3,106 +3,453 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple IPFS Document Uploader</title>
+    <title>IPFS Document Uploader - MetaMask Enabled</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            background: #f5f5f5;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: slideDown 0.6s ease-out;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
         .container {
             background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-        }
-        .status {
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            text-align: center;
-            font-weight: bold;
-        }
-        .connected { background: #d4edda; color: #155724; }
-        .disconnected { background: #f8d7da; color: #721c24; }
-        .file-upload {
-            border: 2px dashed #007bff;
-            border-radius: 5px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             padding: 40px;
-            text-align: center;
-            margin: 20px 0;
-            transition: all 0.3s;
+            max-width: 700px;
+            margin: 0 auto;
+            width: 100%;
+            animation: fadeIn 0.8s ease-out;
         }
-        .file-upload:hover { background: #f8f9fa; }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .status-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            font-weight: 600;
+            font-size: 1.05em;
+            transition: all 0.3s ease;
+        }
+
+        .status-icon {
+            font-size: 1.8em;
+        }
+
+        .status.connected {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .status.disconnected {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
         button {
-            background: #007bff;
+            flex: 1;
+            min-width: 150px;
+            padding: 14px 28px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: #17a2b8;
+            color: white;
+            box-shadow: 0 4px 15px rgba(23, 162, 184, 0.4);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(23, 162, 184, 0.6);
+            background: #138496;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.6;
+        }
+
+        .file-upload {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 30px;
+            text-align: center;
+            margin: 30px 0;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            border-color: #764ba2;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            transform: translateY(-2px);
+        }
+
+        .file-upload h3 {
+            font-size: 1.5em;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .file-upload p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        #fileInfo {
+            display: none;
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        #fileInfo strong {
+            color: #333;
+        }
+
+        .result {
+            display: none;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border: 2px solid #28a745;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result h4 {
+            color: #155724;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .result-item {
+            margin: 12px 0;
+            font-size: 0.95em;
+            word-break: break-all;
+        }
+
+        .result-item strong {
+            color: #155724;
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .hash-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.5);
+            padding: 10px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+
+        .hash-value {
+            flex: 1;
+            word-break: break-all;
+            user-select: all;
+        }
+
+        .copy-btn {
+            background: #28a745;
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 5px;
+            padding: 8px 12px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 16px;
-            margin: 10px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            transition: all 0.2s;
         }
-        button:hover { background: #0056b3; }
-        button:disabled { background: #6c757d; cursor: not-allowed; }
-        .result {
+
+        .copy-btn:hover {
+            background: #218838;
+        }
+
+        .gateway-links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .gateway-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .gateway-link:hover {
+            background: white;
+            transform: translateX(5px);
+        }
+
+        .gateway-link.primary {
+            border-left: 4px solid #28a745;
+        }
+
+        .gateway-link.secondary {
+            border-left: 4px solid #ffc107;
+            opacity: 0.8;
+        }
+
+        .gateway-link a {
+            color: #155724;
+            font-weight: 600;
+            text-decoration: none;
+            flex: 1;
+        }
+
+        .gateway-link a:hover {
+            text-decoration: underline;
+        }
+
+        .debug-section {
+            margin-top: 30px;
+            padding: 15px 20px;
             background: #f8f9fa;
+            border-radius: 10px;
             border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 15px;
-            margin: 20px 0;
+            font-size: 0.9em;
         }
-        .hash { font-family: monospace; word-break: break-all; }
-        .primary-gateway { color: #007bff; font-weight: bold; text-decoration: none; }
-        .primary-gateway:hover { text-decoration: underline; }
-        .secondary-gateway { color: #666; text-decoration: none; }
-        .secondary-gateway:hover { text-decoration: underline; }
+
+        .debug-section strong {
+            color: #333;
+        }
+
+        .debug-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .debug-item:last-child {
+            border-bottom: none;
+        }
+
+        .debug-value {
+            font-family: monospace;
+            color: #666;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            margin-top: 30px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .container {
+                padding: 25px;
+                border-radius: 15px;
+            }
+
+            button {
+                min-width: 100%;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .file-upload {
+                padding: 40px 20px;
+            }
+
+            .hash-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📄 Simple IPFS Document Uploader</h1>
+    <div class="header">
+        <h1>🚀 IPFS Document Uploader</h1>
+        <p>Secure File Storage with MetaMask & SHA256</p>
+    </div>
 
-        <div id="walletStatus" class="status disconnected">
-            Wallet: Not Connected
+    <div class="container">
+        <div id="walletStatus" class="status-section status disconnected">
+            <span class="status-icon">🔌</span>
+            <span id="walletStatusText">Wallet: Not Connected</span>
         </div>
 
-        <button id="connectWallet">Connect MetaMask</button>
-        <button onclick="testConnection()" style="background: #17a2b8;">Test Connection</button>
+        <div class="button-group">
+            <button id="connectWallet" class="btn-primary">🦊 Connect MetaMask</button>
+            <button onclick="testConnection()" class="btn-secondary">🧪 Test Connection</button>
+        </div>
 
         <div class="file-upload" id="fileUpload">
-            <h3>📁 Select Document</h3>
-            <p>Click to choose a file to upload to IPFS</p>
+            <h3>📁 Upload Document</h3>
+            <p>Drag & drop your file here or click to browse</p>
             <input type="file" id="fileInput" style="display: none;">
-            <button onclick="document.getElementById('fileInput').click()">Choose File</button>
+            <button onclick="document.getElementById('fileInput').click()" class="btn-primary" style="margin: 0; width: 160px;">Choose File</button>
         </div>
 
-        <div id="fileInfo" style="display: none; margin: 20px 0;">
-            <strong>Selected:</strong> <span id="fileName"></span><br>
-            <strong>Size:</strong> <span id="fileSize"></span>
+        <div id="fileInfo">
+            <div class="result-item">
+                <strong>📄 Selected File:</strong>
+                <span id="fileName"></span>
+            </div>
+            <div class="result-item">
+                <strong>📊 File Size:</strong>
+                <span id="fileSize"></span>
+            </div>
         </div>
 
-        <button id="uploadBtn" onclick="uploadFile()" disabled>
+        <button id="uploadBtn" onclick="uploadFile()" disabled class="btn-primary" style="width: 100%; padding: 16px;">
             🚀 Upload to IPFS
         </button>
 
-        <div id="result" class="result" style="display: none;"></div>
+        <div id="result" class="result"></div>
 
-        <div style="margin-top: 30px; padding: 15px; background: #f8f9fa; border-radius: 5px; font-size: 12px;">
-            <strong>Debug Info:</strong><br>
-            MetaMask: <span id="debug-metamask">Checking...</span><br>
-            Web3: <span id="debug-web3">Checking...</span><br>
-            Accounts: <span id="debug-accounts">None</span><br>
-            Network: <span id="debug-network">Unknown</span>
+        <div class="debug-section">
+            <strong>🔍 Connection Status:</strong>
+            <div class="debug-item">
+                <span>MetaMask:</span>
+                <span class="debug-value" id="debug-metamask">Checking...</span>
+            </div>
+            <div class="debug-item">
+                <span>Web3 Library:</span>
+                <span class="debug-value" id="debug-web3">Checking...</span>
+            </div>
+            <div class="debug-item">
+                <span>Connected Accounts:</span>
+                <span class="debug-value" id="debug-accounts">None</span>
+            </div>
+            <div class="debug-item">
+                <span>Network:</span>
+                <span class="debug-value" id="debug-network">Unknown</span>
+            </div>
         </div>
+    </div>
+
+    <div class="footer">
+        <p>💾 Your files are stored securely on IPFS • 🔐 Pinned via Pinata Gateway</p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
@@ -116,11 +463,11 @@
         // Debug info updater
         function updateDebugInfo() {
             document.getElementById('debug-metamask').textContent =
-                typeof window.ethereum !== 'undefined' ? 'Detected' : 'Not detected';
+                typeof window.ethereum !== 'undefined' ? '✅ Detected' : '❌ Not detected';
             document.getElementById('debug-web3').textContent =
-                typeof Web3 !== 'undefined' ? 'Loaded' : 'Not loaded';
+                typeof Web3 !== 'undefined' ? '✅ Loaded' : '❌ Not loaded';
             document.getElementById('debug-accounts').textContent =
-                accounts.length > 0 ? `${accounts.length} connected` : 'None';
+                accounts.length > 0 ? `✅ ${accounts.length} connected` : '❌ None';
 
             // Get network info
             if (web3 && accounts.length > 0) {
@@ -130,70 +477,93 @@
                     document.getElementById('debug-network').textContent = 'Unknown';
                 });
             } else {
-                document.getElementById('debug-network').textContent = 'Not connected';
+                document.getElementById('debug-network').textContent = '❌ Not connected';
             }
         }
 
         // Initialize
         window.addEventListener('load', async () => {
             console.log('Page loaded, initializing...');
-
-            // Update debug info
             updateDebugInfo();
 
-            // Check if MetaMask is installed
             if (typeof window.ethereum !== 'undefined') {
                 console.log('MetaMask detected');
-                document.getElementById('debug-metamask').textContent = 'Detected';
+                document.getElementById('debug-metamask').textContent = '✅ Detected';
 
-                // Check if Web3 is available
                 if (typeof Web3 !== 'undefined') {
                     web3 = new Web3(window.ethereum);
                     console.log('Web3 initialized');
-                    document.getElementById('debug-web3').textContent = 'Loaded';
+                    document.getElementById('debug-web3').textContent = '✅ Loaded';
                 } else {
                     console.error('Web3 library not loaded');
-                    document.getElementById('debug-web3').textContent = 'Not loaded';
+                    document.getElementById('debug-web3').textContent = '❌ Not loaded';
                     updateStatus('Web3 library not loaded', 'disconnected');
                     return;
                 }
 
-                // Listen for account changes
                 window.ethereum.on('accountsChanged', (accountsChanged) => {
                     console.log('Accounts changed:', accountsChanged);
                     accounts = accountsChanged;
                     updateDebugInfo();
                     if (accounts.length > 0) {
-                        updateStatus(`Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'connected');
+                        updateStatus(`✅ Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'connected');
                         checkUploadButton();
                     } else {
-                        updateStatus('Wallet disconnected', 'disconnected');
+                        updateStatus('❌ Wallet disconnected', 'disconnected');
                         checkUploadButton();
                     }
                 });
 
-                // Listen for chain changes
                 window.ethereum.on('chainChanged', (chainId) => {
                     console.log('Chain changed:', chainId);
                     updateDebugInfo();
                     window.location.reload();
                 });
 
-                // Check if already connected
                 await checkConnection();
             } else {
-                document.getElementById('debug-metamask').textContent = 'Not detected';
+                document.getElementById('debug-metamask').textContent = '❌ Not detected';
                 updateStatus('MetaMask not detected. Please install MetaMask.', 'disconnected');
                 console.log('MetaMask not found');
             }
 
             setupFileUpload();
+            setupDragAndDrop();
         });
 
         // File upload setup
         function setupFileUpload() {
             const fileInput = document.getElementById('fileInput');
             fileInput.addEventListener('change', handleFileSelect);
+        }
+
+        // Drag and drop setup
+        function setupDragAndDrop() {
+            const fileUpload = document.getElementById('fileUpload');
+            
+            fileUpload.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileUpload.style.borderColor = '#764ba2';
+                fileUpload.style.background = 'linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)';
+            });
+
+            fileUpload.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                fileUpload.style.borderColor = '#667eea';
+                fileUpload.style.background = 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)';
+            });
+
+            fileUpload.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileUpload.style.borderColor = '#667eea';
+                fileUpload.style.background = 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)';
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    document.getElementById('fileInput').files = files;
+                    handleFileSelect({ target: { files: files } });
+                }
+            });
         }
 
         function handleFileSelect(event) {
@@ -214,10 +584,9 @@
                     throw new Error('MetaMask not detected. Please install MetaMask.');
                 }
 
-                updateStatus('Connecting to MetaMask...', 'disconnected');
+                updateStatus('🔄 Connecting to MetaMask...', 'disconnected');
                 console.log('Requesting account access...');
 
-                // Request account access
                 const accountsArray = await window.ethereum.request({
                     method: 'eth_requestAccounts'
                 });
@@ -225,7 +594,7 @@
                 if (accountsArray && accountsArray.length > 0) {
                     accounts = accountsArray;
                     console.log('Connected accounts:', accounts);
-                    updateStatus(`Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'connected');
+                    updateStatus(`✅ Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'connected');
                     updateDebugInfo();
                     checkUploadButton();
                 } else {
@@ -236,13 +605,11 @@
                 console.error('MetaMask connection failed:', error);
 
                 if (error.code === 4001) {
-                    // User rejected the request
-                    updateStatus('Connection rejected by user', 'disconnected');
+                    updateStatus('⚠️ Connection rejected by user', 'disconnected');
                 } else if (error.code === -32002) {
-                    // Request already pending
-                    updateStatus('Connection request pending...', 'disconnected');
+                    updateStatus('⏳ Connection request pending...', 'disconnected');
                 } else {
-                    updateStatus(`Connection failed: ${error.message}`, 'disconnected');
+                    updateStatus(`❌ Connection failed: ${error.message}`, 'disconnected');
                 }
                 updateDebugInfo();
             }
@@ -255,8 +622,6 @@
                 }
 
                 console.log('Checking existing connection...');
-
-                // Try to get accounts without prompting
                 const accountsArray = await window.ethereum.request({
                     method: 'eth_accounts'
                 });
@@ -264,7 +629,7 @@
                 if (accountsArray && accountsArray.length > 0) {
                     accounts = accountsArray;
                     console.log('Already connected:', accounts);
-                    updateStatus(`Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'connected');
+                    updateStatus(`✅ Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'connected');
                     updateDebugInfo();
                     checkUploadButton();
                 } else {
@@ -287,18 +652,16 @@
             }
 
             try {
-                // Test basic connection
                 const chainId = await window.ethereum.request({ method: 'eth_chainId' });
                 console.log('Chain ID:', chainId);
 
-                // Test accounts
                 const accounts = await window.ethereum.request({ method: 'eth_accounts' });
                 console.log('Accounts:', accounts);
 
-                alert(`Connection test successful!\nChain ID: ${chainId}\nAccounts: ${accounts.length}`);
+                alert(`✅ Connection test successful!\n\nChain ID: ${chainId}\nAccounts: ${accounts.length}`);
             } catch (error) {
                 console.error('Connection test failed:', error);
-                alert('Connection test failed: ' + error.message);
+                alert('❌ Connection test failed: ' + error.message);
             }
         }
 
@@ -307,14 +670,13 @@
             if (!selectedFile || accounts.length === 0) return;
 
             const uploadBtn = document.getElementById('uploadBtn');
+            const originalText = uploadBtn.textContent;
             uploadBtn.disabled = true;
-            uploadBtn.textContent = 'Uploading...';
+            uploadBtn.innerHTML = '<span class="loading-spinner"></span>Uploading...';
 
             try {
-                // Read file as base64
                 const base64 = await fileToBase64(selectedFile);
 
-                // Upload to server
                 const response = await fetch(`${API_BASE}/upload`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -333,10 +695,10 @@
 
             } catch (error) {
                 console.error('Upload failed:', error);
-                alert('Upload failed: ' + error.message);
+                alert('❌ Upload failed: ' + error.message);
             } finally {
                 uploadBtn.disabled = false;
-                uploadBtn.textContent = '🚀 Upload to IPFS';
+                uploadBtn.textContent = originalText;
             }
         }
 
@@ -346,7 +708,6 @@
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = () => {
-                    // Remove the data:image/jpeg;base64, prefix
                     const base64 = reader.result.split(',')[1];
                     resolve(base64);
                 };
@@ -356,8 +717,9 @@
 
         function updateStatus(message, className) {
             const status = document.getElementById('walletStatus');
-            status.textContent = message;
-            status.className = `status ${className}`;
+            const statusText = document.getElementById('walletStatusText');
+            statusText.textContent = message;
+            status.className = `status-section status ${className}`;
         }
 
         function checkUploadButton() {
@@ -365,30 +727,104 @@
             uploadBtn.disabled = !(accounts.length > 0 && selectedFile);
         }
 
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.textContent;
+                button.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+
         function displayResult(result) {
             const resultDiv = document.getElementById('result');
             resultDiv.style.display = 'block';
 
-            let gatewayLinks = result.alternativeGateways ?
-                result.alternativeGateways.map((url, index) => {
+            let gatewayLinksHTML = '<div class="gateway-links">';
+            if (result.alternativeGateways) {
+                result.alternativeGateways.forEach((url, index) => {
                     const gatewayName = url.split('/')[2];
                     const isPinata = gatewayName.includes('pinata');
-                    return `<a href="${url}" target="_blank" class="${isPinata ? 'primary-gateway' : 'secondary-gateway'}">${gatewayName}</a>`;
-                }).join(' | ') :
-                `<a href="${result.gatewayUrl}" target="_blank" class="primary-gateway">${result.gatewayUrl}</a>`;
+                    const icon = isPinata ? '⚡' : '🔗';
+                    const badge = isPinata ? 'primary' : 'secondary';
+                    gatewayLinksHTML += `
+                        <div class="gateway-link ${badge}">
+                            <span>${icon}</span>
+                            <a href="${url}" target="_blank">${gatewayName}</a>
+                        </div>
+                    `;
+                });
+            } else {
+                gatewayLinksHTML += `
+                    <div class="gateway-link primary">
+                        <span>⚡</span>
+                        <a href="${result.gatewayUrl}" target="_blank">${result.gatewayUrl}</a>
+                    </div>
+                `;
+            }
+            gatewayLinksHTML += '</div>';
+
+            const sha256Button = `<button class="copy-btn" onclick="copyToClipboard('${result.sha256Hash}', this)">📋 Copy</button>`;
+            const cidButton = `<button class="copy-btn" onclick="copyToClipboard('${result.cid}', this)">📋 Copy</button>`;
 
             resultDiv.innerHTML = `
                 <h4>✅ Upload Successful!</h4>
-                <strong>File:</strong> ${result.fileName}<br>
-                <strong>SHA256 Hash:</strong> <span class="hash">${result.sha256Hash}</span><br>
-                <strong>IPFS CID:</strong> <span class="hash">${result.cid}</span><br>
-                <strong>Access Links:</strong> ${gatewayLinks}<br>
-                <strong>Uploaded by:</strong> ${accounts[0]}<br>
-                <strong>Timestamp:</strong> ${new Date(result.timestamp).toLocaleString()}
-                ${result.note ? `<br><em><small>💡 ${result.note}</small></em>` : ''}
-                <br><em><small>🔗 <strong>Use Pinata gateway for immediate access!</strong></small></em>
+                <div class="result-item">
+                    <strong>📄 File Name:</strong>
+                    ${result.fileName}
+                </div>
+                <div class="result-item">
+                    <strong>📊 File Size:</strong>
+                    ${(result.fileSize / 1024).toFixed(2)} KB
+                </div>
+                <div class="result-item">
+                    <strong>🔐 SHA256 Hash:</strong>
+                    <div class="hash-container">
+                        <span class="hash-value">${result.sha256Hash}</span>
+                        ${sha256Button}
+                    </div>
+                </div>
+                <div class="result-item">
+                    <strong>📌 IPFS CID:</strong>
+                    <div class="hash-container">
+                        <span class="hash-value">${result.cid}</span>
+                        ${cidButton}
+                    </div>
+                </div>
+                <div class="result-item">
+                    <strong>🌐 Access Links:</strong>
+                    ${gatewayLinksHTML}
+                </div>
+                <div class="result-item">
+                    <strong>👤 Uploaded By:</strong>
+                    ${accounts[0]}
+                </div>
+                <div class="result-item">
+                    <strong>⏰ Timestamp:</strong>
+                    ${new Date(result.timestamp).toLocaleString()}
+                </div>
+                ${result.note ? `<div style="margin-top: 15px; padding: 12px; background: rgba(255,255,255,0.6); border-radius: 8px; font-size: 0.9em; border-left: 3px solid #ffc107;"><em>💡 ${result.note}</em></div>` : ''}
             `;
         }
+
+        // Connect button click handler
+        document.addEventListener('load', () => {
+            const connectBtn = document.getElementById('connectWallet');
+            if (connectBtn) {
+                connectBtn.addEventListener('click', connectMetaMask);
+            }
+        });
+
+        // Alternative way to set up the click handler
+        window.addEventListener('load', () => {
+            const connectBtn = document.getElementById('connectWallet');
+            if (connectBtn) {
+                connectBtn.addEventListener('click', connectMetaMask);
+            }
+        });
     </script>
 </body>
 </html>
