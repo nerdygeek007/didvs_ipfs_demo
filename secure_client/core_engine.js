@@ -107,13 +107,28 @@ async function pushToIPFS(encryptedBuffer, fileName = "secure_payload.bin") {
  * POST /api/health
  * Validates system readiness
  */
+app.get("/api/health", (req, res) => {
+  try {
+    const isReady = !!process.env.PINATA_JWT;
+    res.status(isReady ? 200 : 503).json({
+      status: isReady ? "SYSTEM_READY" : "MISSING_CREDENTIALS",
+      timestamp: new Date().toISOString(),
+      pinataConfigured: isReady,
+      method: "GET"
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post("/api/health", (req, res) => {
   try {
     const isReady = !!process.env.PINATA_JWT;
     res.status(isReady ? 200 : 503).json({
       status: isReady ? "SYSTEM_READY" : "MISSING_CREDENTIALS",
       timestamp: new Date().toISOString(),
-      pinataConfigured: isReady
+      pinataConfigured: isReady,
+      method: "POST"
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

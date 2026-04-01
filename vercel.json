@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "secure_client/api/index.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/secure_client/api/index.js" },
+    { "src": "/(.*)", "dest": "/secure_client/api/index.js" }
+  ]
+}
