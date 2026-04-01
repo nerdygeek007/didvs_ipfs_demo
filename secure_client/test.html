@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Test - IPFS Upload</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .test-section { background: #f0f0f0; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .result { background: #e8f5e8; border: 1px solid #c3e6c3; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffeaea; border: 1px solid #f5c6c6; }
+        .primary-gateway { color: #007bff; font-weight: bold; text-decoration: none; }
+        .primary-gateway:hover { text-decoration: underline; }
+        .secondary-gateway { color: #666; text-decoration: none; }
+        .secondary-gateway:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Backend Test - IPFS Upload</h1>
+
+    <div class="test-section">
+        <h3>Test 1: Server Health</h3>
+        <button onclick="testHealth()">Test Server Health</button>
+        <div id="healthResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 2: File Upload</h3>
+        <input type="file" id="testFile" accept="*/*">
+        <button onclick="testUpload()">Test Upload</button>
+        <div id="uploadResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 3: MetaMask Connection (Browser Test)</h3>
+        <button onclick="testMetaMask()">Test MetaMask</button>
+        <div id="metamaskResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+
+        async function testHealth() {
+            const resultDiv = document.getElementById('healthResult');
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                resultDiv.className = 'result';
+                resultDiv.innerHTML = `<strong>✅ Server is running!</strong><br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<strong>❌ Server not responding:</strong> ${error.message}`;
+            }
+        }
+
+        async function testUpload() {
+            const fileInput = document.getElementById('testFile');
+            const resultDiv = document.getElementById('uploadResult');
+
+            if (!fileInput.files[0]) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '❌ Please select a file first';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            resultDiv.innerHTML = '⏳ Uploading...';
+
+            try {
+                // Convert file to base64
+                const base64 = await fileToBase64(file);
+
+                // Upload to server
+                const response = await fetch(`${API_BASE}/upload`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fileName: file.name,
+                        content: base64
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                resultDiv.className = 'result';
+                let gatewayLinks = result.alternativeGateways ?
+                    result.alternativeGateways.map((url, index) => {
+                        const gatewayName = url.split('/')[2];
+                        const isPinata = gatewayName.includes('pinata');
+                        return `<a href="${url}" target="_blank" class="${isPinata ? 'primary-gateway' : 'secondary-gateway'}">${gatewayName}</a>`;
+                    }).join(' | ') :
+                    `<a href="${result.gatewayUrl}" target="_blank" class="primary-gateway">${result.gatewayUrl}</a>`;
+
+                resultDiv.innerHTML = `
+                    <strong>✅ Upload successful!</strong><br>
+                    <strong>SHA256:</strong> ${result.sha256Hash}<br>
+                    <strong>IPFS CID:</strong> ${result.cid}<br>
+                    <strong>Access Links:</strong> ${gatewayLinks}<br>
+                    <strong>Size:</strong> ${(result.fileSize / 1024).toFixed(2)} KB
+                    ${result.note ? `<br><em><small>💡 ${result.note}</small></em>` : ''}
+                    <br><em><small>🔗 <strong>Use Pinata gateway for immediate access!</strong></small></em>
+                `;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<strong>❌ Upload failed:</strong> ${error.message}`;
+            }
+        }
+
+        async function testMetaMask() {
+            const resultDiv = document.getElementById('metamaskResult');
+
+            if (typeof window.ethereum === 'undefined') {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '❌ MetaMask not detected. Please install MetaMask extension.';
+                return;
+            }
+
+            resultDiv.innerHTML = '⏳ Testing MetaMask...';
+
+            try {
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                let accounts = await window.ethereum.request({ method: 'eth_accounts' });
+
+                // If no accounts connected, request them
+                if (accounts.length === 0) {
+                    resultDiv.innerHTML = '⏳ Requesting account access...';
+                    accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                }
+
+                resultDiv.className = 'result';
+                resultDiv.innerHTML = `
+                    <strong>✅ MetaMask connected!</strong><br>
+                    <strong>Chain ID:</strong> ${chainId}<br>
+                    <strong>Accounts:</strong> ${accounts.length} connected<br>
+                    ${accounts.length > 0 ? `<strong>Address:</strong> ${accounts[0]}` : 'No accounts connected'}
+                `;
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<strong>❌ MetaMask test failed:</strong> ${error.message}`;
+            }
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Auto-test health on page load
+        window.addEventListener('load', () => {
+            setTimeout(testHealth, 1000);
+        });
+    </script>
+</body>
+</html>

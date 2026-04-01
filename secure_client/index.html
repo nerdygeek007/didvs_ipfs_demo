@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple IPFS Document Uploader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        .connected { background: #d4edda; color: #155724; }
+        .disconnected { background: #f8d7da; color: #721c24; }
+        .file-upload {
+            border: 2px dashed #007bff;
+            border-radius: 5px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            transition: all 0.3s;
+        }
+        .file-upload:hover { background: #f8f9fa; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .hash { font-family: monospace; word-break: break-all; }
+        .primary-gateway { color: #007bff; font-weight: bold; text-decoration: none; }
+        .primary-gateway:hover { text-decoration: underline; }
+        .secondary-gateway { color: #666; text-decoration: none; }
+        .secondary-gateway:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 Simple IPFS Document Uploader</h1>
+
+        <div id="walletStatus" class="status disconnected">
+            Wallet: Not Connected
+        </div>
+
+        <button id="connectWallet">Connect MetaMask</button>
+        <button onclick="testConnection()" style="background: #17a2b8;">Test Connection</button>
+
+        <div class="file-upload" id="fileUpload">
+            <h3>📁 Select Document</h3>
+            <p>Click to choose a file to upload to IPFS</p>
+            <input type="file" id="fileInput" style="display: none;">
+            <button onclick="document.getElementById('fileInput').click()">Choose File</button>
+        </div>
+
+        <div id="fileInfo" style="display: none; margin: 20px 0;">
+            <strong>Selected:</strong> <span id="fileName"></span><br>
+            <strong>Size:</strong> <span id="fileSize"></span>
+        </div>
+
+        <button id="uploadBtn" onclick="uploadFile()" disabled>
+            🚀 Upload to IPFS
+        </button>
+
+        <div id="result" class="result" style="display: none;"></div>
+
+        <div style="margin-top: 30px; padding: 15px; background: #f8f9fa; border-radius: 5px; font-size: 12px;">
+            <strong>Debug Info:</strong><br>
+            MetaMask: <span id="debug-metamask">Checking...</span><br>
+            Web3: <span id="debug-web3">Checking...</span><br>
+            Accounts: <span id="debug-accounts">None</span><br>
+            Network: <span id="debug-network">Unknown</span>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script>
+        let web3;
+        let accounts = [];
+        let selectedFile = null;
+
+        const API_BASE = 'http://localhost:3000';
+
+        // Debug info updater
+        function updateDebugInfo() {
+            document.getElementById('debug-metamask').textContent =
+                typeof window.ethereum !== 'undefined' ? 'Detected' : 'Not detected';
+            document.getElementById('debug-web3').textContent =
+                typeof Web3 !== 'undefined' ? 'Loaded' : 'Not loaded';
+            document.getElementById('debug-accounts').textContent =
+                accounts.length > 0 ? `${accounts.length} connected` : 'None';
+
+            // Get network info
+            if (web3 && accounts.length > 0) {
+                web3.eth.getChainId().then(chainId => {
+                    document.getElementById('debug-network').textContent = `Chain ID: ${chainId}`;
+                }).catch(() => {
+                    document.getElementById('debug-network').textContent = 'Unknown';
+                });
+            } else {
+                document.getElementById('debug-network').textContent = 'Not connected';
+            }
+        }
+
+        // Initialize
+        window.addEventListener('load', async () => {
+            console.log('Page loaded, initializing...');
+
+            // Update debug info
+            updateDebugInfo();
+
+            // Check if MetaMask is installed
+            if (typeof window.ethereum !== 'undefined') {
+                console.log('MetaMask detected');
+                document.getElementById('debug-metamask').textContent = 'Detected';
+
+                // Check if Web3 is available
+                if (typeof Web3 !== 'undefined') {
+                    web3 = new Web3(window.ethereum);
+                    console.log('Web3 initialized');
+                    document.getElementById('debug-web3').textContent = 'Loaded';
+                } else {
+                    console.error('Web3 library not loaded');
+                    document.getElementById('debug-web3').textContent = 'Not loaded';
+                    updateStatus('Web3 library not loaded', 'disconnected');
+                    return;
+                }
+
+                // Listen for account changes
+                window.ethereum.on('accountsChanged', (accountsChanged) => {
+                    console.log('Accounts changed:', accountsChanged);
+                    accounts = accountsChanged;
+                    updateDebugInfo();
+                    if (accounts.length > 0) {
+                        updateStatus(`Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'connected');
+                        checkUploadButton();
+                    } else {
+                        updateStatus('Wallet disconnected', 'disconnected');
+                        checkUploadButton();
+                    }
+                });
+
+                // Listen for chain changes
+                window.ethereum.on('chainChanged', (chainId) => {
+                    console.log('Chain changed:', chainId);
+                    updateDebugInfo();
+                    window.location.reload();
+                });
+
+                // Check if already connected
+                await checkConnection();
+            } else {
+                document.getElementById('debug-metamask').textContent = 'Not detected';
+                updateStatus('MetaMask not detected. Please install MetaMask.', 'disconnected');
+                console.log('MetaMask not found');
+            }
+
+            setupFileUpload();
+        });
+
+        // File upload setup
+        function setupFileUpload() {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.addEventListener('change', handleFileSelect);
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileSize').textContent = (file.size / 1024).toFixed(2) + ' KB';
+                document.getElementById('fileInfo').style.display = 'block';
+                checkUploadButton();
+            }
+        }
+
+        // MetaMask connection
+        async function connectMetaMask() {
+            try {
+                if (!window.ethereum) {
+                    throw new Error('MetaMask not detected. Please install MetaMask.');
+                }
+
+                updateStatus('Connecting to MetaMask...', 'disconnected');
+                console.log('Requesting account access...');
+
+                // Request account access
+                const accountsArray = await window.ethereum.request({
+                    method: 'eth_requestAccounts'
+                });
+
+                if (accountsArray && accountsArray.length > 0) {
+                    accounts = accountsArray;
+                    console.log('Connected accounts:', accounts);
+                    updateStatus(`Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'connected');
+                    updateDebugInfo();
+                    checkUploadButton();
+                } else {
+                    throw new Error('No accounts found');
+                }
+
+            } catch (error) {
+                console.error('MetaMask connection failed:', error);
+
+                if (error.code === 4001) {
+                    // User rejected the request
+                    updateStatus('Connection rejected by user', 'disconnected');
+                } else if (error.code === -32002) {
+                    // Request already pending
+                    updateStatus('Connection request pending...', 'disconnected');
+                } else {
+                    updateStatus(`Connection failed: ${error.message}`, 'disconnected');
+                }
+                updateDebugInfo();
+            }
+        }
+
+        async function checkConnection() {
+            try {
+                if (!window.ethereum) {
+                    return;
+                }
+
+                console.log('Checking existing connection...');
+
+                // Try to get accounts without prompting
+                const accountsArray = await window.ethereum.request({
+                    method: 'eth_accounts'
+                });
+
+                if (accountsArray && accountsArray.length > 0) {
+                    accounts = accountsArray;
+                    console.log('Already connected:', accounts);
+                    updateStatus(`Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'connected');
+                    updateDebugInfo();
+                    checkUploadButton();
+                } else {
+                    console.log('Not connected');
+                    updateDebugInfo();
+                }
+            } catch (error) {
+                console.error('Connection check failed:', error);
+                updateDebugInfo();
+            }
+        }
+
+        // Test connection function
+        async function testConnection() {
+            console.log('Testing MetaMask connection...');
+
+            if (!window.ethereum) {
+                alert('MetaMask not detected!');
+                return;
+            }
+
+            try {
+                // Test basic connection
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                console.log('Chain ID:', chainId);
+
+                // Test accounts
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                console.log('Accounts:', accounts);
+
+                alert(`Connection test successful!\nChain ID: ${chainId}\nAccounts: ${accounts.length}`);
+            } catch (error) {
+                console.error('Connection test failed:', error);
+                alert('Connection test failed: ' + error.message);
+            }
+        }
+
+        // Upload file
+        async function uploadFile() {
+            if (!selectedFile || accounts.length === 0) return;
+
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Uploading...';
+
+            try {
+                // Read file as base64
+                const base64 = await fileToBase64(selectedFile);
+
+                // Upload to server
+                const response = await fetch(`${API_BASE}/upload`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fileName: selectedFile.name,
+                        content: base64
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Upload failed: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                displayResult(result);
+
+            } catch (error) {
+                console.error('Upload failed:', error);
+                alert('Upload failed: ' + error.message);
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '🚀 Upload to IPFS';
+            }
+        }
+
+        // Helper functions
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    // Remove the data:image/jpeg;base64, prefix
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function updateStatus(message, className) {
+            const status = document.getElementById('walletStatus');
+            status.textContent = message;
+            status.className = `status ${className}`;
+        }
+
+        function checkUploadButton() {
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = !(accounts.length > 0 && selectedFile);
+        }
+
+        function displayResult(result) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+
+            let gatewayLinks = result.alternativeGateways ?
+                result.alternativeGateways.map((url, index) => {
+                    const gatewayName = url.split('/')[2];
+                    const isPinata = gatewayName.includes('pinata');
+                    return `<a href="${url}" target="_blank" class="${isPinata ? 'primary-gateway' : 'secondary-gateway'}">${gatewayName}</a>`;
+                }).join(' | ') :
+                `<a href="${result.gatewayUrl}" target="_blank" class="primary-gateway">${result.gatewayUrl}</a>`;
+
+            resultDiv.innerHTML = `
+                <h4>✅ Upload Successful!</h4>
+                <strong>File:</strong> ${result.fileName}<br>
+                <strong>SHA256 Hash:</strong> <span class="hash">${result.sha256Hash}</span><br>
+                <strong>IPFS CID:</strong> <span class="hash">${result.cid}</span><br>
+                <strong>Access Links:</strong> ${gatewayLinks}<br>
+                <strong>Uploaded by:</strong> ${accounts[0]}<br>
+                <strong>Timestamp:</strong> ${new Date(result.timestamp).toLocaleString()}
+                ${result.note ? `<br><em><small>💡 ${result.note}</small></em>` : ''}
+                <br><em><small>🔗 <strong>Use Pinata gateway for immediate access!</strong></small></em>
+            `;
+        }
+    </script>
+</body>
+</html>
